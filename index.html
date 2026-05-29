@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LinkedIn Agent Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #141720;
+  --bg3: #1c2030;
+  --bg4: #242840;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --text2: #8b90a8;
+  --text3: #565b75;
+  --blue: #4f8ef7;
+  --blue-dim: rgba(79,142,247,0.12);
+  --green: #34d399;
+  --green-dim: rgba(52,211,153,0.12);
+  --amber: #fbbf24;
+  --amber-dim: rgba(251,191,36,0.12);
+  --coral: #f87171;
+  --coral-dim: rgba(248,113,113,0.12);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
+  --teal: #22d3ee;
+  --teal-dim: rgba(34,211,238,0.12);
+  --pink: #f472b6;
+  --pink-dim: rgba(244,114,182,0.12);
+  --r: 10px;
+  --r-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+}
+a { color: var(--blue); text-decoration: none; }
+code, .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+/* ── Layout ── */
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 24px 0;
+  position: fixed; top: 0; left: 0; bottom: 0;
+}
+.main {
+  margin-left: 220px; flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+}
+.sidebar-logo {
+  padding: 0 20px 28px;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.3px;
+  color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-logo .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  flex-shrink: 0;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1} 50%{opacity:0.4}
+}
+nav { flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; cursor: pointer;
+  color: var(--text2); font-size: 13.5px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active {
+  color: var(--blue); border-left-color: var(--blue);
+  background: var(--blue-dim);
+}
+.nav-icon { font-size: 16px; opacity: 0.8; }
+.badge-count {
+  margin-left: auto;
+  background: var(--coral);
+  color: #fff; font-size: 10px; font-weight: 600;
+  padding: 1px 6px; border-radius: 10px;
+  min-width: 18px; text-align: center;
+}
+.sidebar-bottom {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.agent-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text3);
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+
+/* ── Page sections ── */
+.page { display: none; }
+.page.active { display: block; }
+.page-title {
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.5px; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.subtitle { color: var(--text2); font-size: 13px; font-weight: 400; }
+
+/* ── Stat cards ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px; margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px;
+}
+.stat-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+  color: var(--text3); text-transform: uppercase; margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 28px; font-weight: 600; letter-spacing: -1px;
+  line-height: 1;
+}
+.stat-sub {
+  font-size: 11px; color: var(--text3); margin-top: 4px;
+}
+.stat-card.highlight { border-color: var(--blue); background: var(--blue-dim); }
+.stat-card.highlight .stat-value { color: var(--blue); }
+
+/* ── Chart bar ── */
+.chart-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px; margin-bottom: 24px;
+}
+.chart-title {
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
+}
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  background: var(--blue); min-height: 4px;
+  transition: height 0.4s;
+}
+.bar.accepted { background: var(--green); }
+.bar-label { font-size: 10px; color: var(--text3); }
+
+/* ── Message queue ── */
+.msg-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px; margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.msg-card:hover { border-color: var(--border2); }
+.msg-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px;
+}
+.msg-person { flex: 1; }
+.msg-name {
+  font-size: 15px; font-weight: 500; display: flex;
+  align-items: center; gap: 8px;
+}
+.msg-role { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.persona-badge {
+  display: inline-flex; align-items: center;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 2px 8px; border-radius: 20px;
+  text-transform: uppercase;
+}
+.score-pill {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--bg3); color: var(--amber);
+  flex-shrink: 0;
+}
+.msg-body {
+  background: var(--bg3); border-radius: var(--r-sm);
+  padding: 14px; margin: 12px 0;
+}
+.msg-text {
+  font-size: 14px; line-height: 1.65;
+  white-space: pre-wrap;
+}
+.msg-text[contenteditable="true"] {
+  outline: none;
+  border: 1px solid var(--blue);
+  border-radius: var(--r-sm); padding: 12px;
+  background: var(--bg4);
+  min-height: 60px;
+}
+.msg-meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--text3);
+}
+.char-count { font-family: 'DM Mono', monospace; }
+.char-count.warn { color: var(--amber); }
+.char-count.danger { color: var(--coral); }
+.msg-hooks {
+  margin: 8px 0 12px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.hook {
+  background: var(--bg4); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 3px 10px;
+  font-size: 11px; color: var(--text2);
+}
+.msg-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px;
+}
+.btn {
+  padding: 7px 16px; border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: none; font-family: inherit; transition: all 0.15s;
+}
+.btn-approve {
+  background: var(--green); color: #0a1a12;
+}
+.btn-approve:hover { opacity: 0.85; }
+.btn-edit {
+  background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border2);
+}
+.btn-edit:hover { background: var(--bg4); }
+.btn-reject {
+  background: transparent; color: var(--coral);
+  border: 1px solid rgba(248,113,113,0.3);
+}
+.btn-reject:hover { background: var(--coral-dim); }
+.btn-save {
+  background: var(--blue); color: #fff;
+}
+.btn-save:hover { opacity: 0.85; }
+.btn-primary {
+  background: var(--blue); color: #fff;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-sm {
+  padding: 5px 12px; font-size: 12px;
+}
+.btn-ghost {
+  background: var(--bg3); color: var(--text2);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── Profile table ── */
+.table-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+th {
+  padding: 12px 16px; text-align: left;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+  color: var(--text3); text-transform: uppercase;
+  background: var(--bg3); border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg3); }
+.status-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 500; padding: 2px 8px;
+  border-radius: 20px;
+}
+.chip-pending { background: var(--amber-dim); color: var(--amber); }
+.chip-connected { background: var(--green-dim); color: var(--green); }
+.chip-failed { background: var(--coral-dim); color: var(--coral); }
+.chip-skipped { background: var(--bg3); color: var(--text3); }
+.chip-discovered { background: var(--purple-dim); color: var(--purple); }
+
+/* ── Logs ── */
+.log-list { display: flex; flex-direction: column; gap: 2px; }
+.log-row {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 8px 14px; border-radius: var(--r-sm);
+  font-size: 12px; font-family: 'DM Mono', monospace;
+}
+.log-row:hover { background: var(--bg3); }
+.log-time { color: var(--text3); flex-shrink: 0; }
+.log-level { flex-shrink: 0; font-weight: 500; min-width: 40px; }
+.log-event { color: var(--text); flex-shrink: 0; min-width: 180px; }
+.log-detail { color: var(--text2); flex: 1; }
+.level-INFO { color: var(--blue); }
+.level-WARNING { color: var(--amber); }
+.level-ERROR { color: var(--coral); }
+
+/* ── Filters ── */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--text2); font-family: inherit; transition: all 0.15s;
+}
+.filter-btn.active, .filter-btn:hover {
+  border-color: var(--blue); color: var(--blue); background: var(--blue-dim);
+}
+.search-input {
+  flex: 1; padding: 7px 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: inherit; font-size: 13px;
+  outline: none; transition: border-color 0.15s;
+  max-width: 260px;
+}
+.search-input:focus { border-color: var(--blue); }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center; padding: 60px 20px;
+  color: var(--text3); font-size: 14px;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 12px 20px;
+  font-size: 13px; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s; z-index: 1000;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--coral); }
+
+/* ── Job controls ── */
+.job-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 14px; margin-bottom: 24px;
+}
+.job-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px;
+}
+.job-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.job-next { font-size: 11px; color: var(--text3); margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="dot"></div>
+    LinkedIn Agent
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('review')">
+      <span class="nav-icon">✉️</span> Review Queue
+      <span class="badge-count" id="nav-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="showPage('profiles')">
+      <span class="nav-icon">👥</span> Profiles
+    </div>
+    <div class="nav-item" onclick="showPage('jobs')">
+      <span class="nav-icon">⚙️</span> Jobs
+    </div>
+    <div class="nav-item" onclick="showPage('logs')">
+      <span class="nav-icon">📋</span> Logs
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="agent-status">
+      <div class="status-dot"></div>
+      Agent running
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Dashboard -->
+  <section id="page-dashboard" class="page active">
+    <div class="page-title">
+      Dashboard
+      <button class="btn btn-ghost btn-sm" onclick="loadAll()">↻ Refresh</button>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">Invites today</div><div class="stat-value" id="s-invites">—</div><div class="stat-sub" id="s-invites-sub">of 15 limit</div></div>
+      <div class="stat-card"><div class="stat-label">Total profiles</div><div class="stat-value" id="s-profiles">—</div></div>
+      <div class="stat-card highlight"><div class="stat-label">Connected</div><div class="stat-value" id="s-connected">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending invites</div><div class="stat-value" id="s-pending-inv">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending review</div><div class="stat-value" id="s-pending-rev" style="color:var(--amber)">—</div></div>
+      <div class="stat-card"><div class="stat-label">Messages sent</div><div class="stat-value" id="s-sent">—</div></div>
+      <div class="stat-card"><div class="stat-label">Replies</div><div class="stat-value" id="s-replied" style="color:var(--green)">—</div></div>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">Invites sent — last 7 days</div>
+      <div class="bar-chart" id="bar-chart"></div>
+    </div>
+  </section>
+
+  <!-- Review Queue -->
+  <section id="page-review" class="page">
+    <div class="page-title">
+      Review Queue
+      <span class="subtitle" id="review-count-label"></span>
+    </div>
+    <div id="review-list"></div>
+  </section>
+
+  <!-- Profiles -->
+  <section id="page-profiles" class="page">
+    <div class="page-title">Profiles</div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterProfiles('all', this)">All</button>
+      <button class="filter-btn" onclick="filterProfiles('invite_pending', this)">Pending</button>
+      <button class="filter-btn" onclick="filterProfiles('connected', this)">Connected</button>
+      <button class="filter-btn" onclick="filterProfiles('skipped', this)">Skipped</button>
+      <input class="search-input" id="profile-search" placeholder="Search name / company…" oninput="renderProfiles()"/>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Role</th><th>Company</th><th>Persona</th>
+            <th>Score</th><th>Status</th><th>LinkedIn</th>
+          </tr>
+        </thead>
+        <tbody id="profiles-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Jobs -->
+  <section id="page-jobs" class="page">
+    <div class="page-title">Scheduled Jobs</div>
+    <div class="job-grid" id="job-grid"></div>
+    <p style="color:var(--text2);font-size:13px;">
+      Jobs run automatically. Trigger manually to run immediately.<br>
+      <strong>Discovery</strong> runs at 10:30 AM daily &nbsp;·&nbsp;
+      <strong>Monitor</strong> runs every hour &nbsp;·&nbsp;
+      <strong>Send approved</strong> runs every 30 min.
+    </p>
+  </section>
+
+  <!-- Logs -->
+  <section id="page-logs" class="page">
+    <div class="page-title">
+      Agent Logs
+      <button class="btn btn-ghost btn-sm" onclick="loadLogs()">↻ Refresh</button>
+    </div>
+    <div class="log-list" id="log-list"></div>
+  </section>
+
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';  // same origin
+
+// ── State ────────────────────────────────────────────────────
+let allProfiles = [];
+let profileFilter = 'all';
+let pendingMessages = [];
+
+// ── Navigation ───────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(id.split('-')[0])) n.classList.add('active');
+  });
+  if (id === 'review') loadReview();
+  if (id === 'profiles') loadProfiles();
+  if (id === 'logs') loadLogs();
+  if (id === 'jobs') loadJobs();
+  if (id === 'dashboard') loadStats();
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ── Stats ────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(API + '/api/stats');
+    const d = await r.json();
+    document.getElementById('s-invites').textContent = d.today.invites_sent;
+    document.getElementById('s-invites-sub').textContent = `of ${d.today.invites_limit} limit`;
+    document.getElementById('s-profiles').textContent = d.totals.profiles;
+    document.getElementById('s-connected').textContent = d.totals.connected;
+    document.getElementById('s-pending-inv').textContent = d.totals.pending_invites;
+    document.getElementById('s-pending-rev').textContent = d.totals.messages_pending_review;
+    document.getElementById('s-sent').textContent = d.totals.messages_sent;
+    document.getElementById('s-replied').textContent = d.totals.messages_replied;
+
+    // Badge
+    const n = d.totals.messages_pending_review;
+    const badge = document.getElementById('nav-badge');
+    badge.textContent = n; badge.style.display = n > 0 ? '' : 'none';
+
+    // Bar chart
+    renderBarChart(d.weekly);
+  } catch(e) { console.error(e); }
+}
+
+function renderBarChart(weekly) {
+  const chart = document.getElementById('bar-chart');
+  const max = Math.max(...weekly.map(d => d.invites_sent), 1);
+  chart.innerHTML = weekly.map(d => {
+    const h = Math.round((d.invites_sent / max) * 70);
+    const h2 = Math.round((d.invites_accepted / max) * 70);
+    const label = d.date.slice(5);
+    return `<div class="bar-col">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:70px">
+        <div class="bar" style="height:${h}px;flex:1" title="Sent: ${d.invites_sent}"></div>
+        <div class="bar accepted" style="height:${h2}px;flex:1" title="Accepted: ${d.invites_accepted}"></div>
+      </div>
+      <div class="bar-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Persona colours ──────────────────────────────────────────
+const PERSONA_COLORS = {
+  senior_designer:      ['var(--blue-dim)','var(--blue)'],
+  design_leader:        ['var(--purple-dim)','var(--purple)'],
+  recruiter:            ['var(--amber-dim)','var(--amber)'],
+  hr:                   ['var(--pink-dim)','var(--pink)'],
+  startup_founder:      ['var(--coral-dim)','var(--coral)'],
+  product_manager:      ['var(--teal-dim)','var(--teal)'],
+  fintech_professional: ['var(--green-dim)','var(--green)'],
+  unknown:              ['var(--bg3)','var(--text3)'],
+};
+const PERSONA_LABELS = {
+  senior_designer:'Senior Designer', design_leader:'Design Leader',
+  recruiter:'Recruiter', hr:'HR', startup_founder:'Founder',
+  product_manager:'Product Manager', fintech_professional:'Fintech', unknown:'Unknown',
+};
+function personaBadge(p) {
+  const [bg, col] = PERSONA_COLORS[p] || PERSONA_COLORS.unknown;
+  return `<span class="persona-badge" style="background:${bg};color:${col}">${PERSONA_LABELS[p]||p}</span>`;
+}
+
+// ── Review queue ─────────────────────────────────────────────
+async function loadReview() {
+  const r = await fetch(API + '/api/messages/pending');
+  pendingMessages = await r.json();
+  const label = document.getElementById('review-count-label');
+  label.textContent = `${pendingMessages.length} message${pendingMessages.length !== 1 ? 's' : ''} awaiting review`;
+  renderReview();
+}
+
+function renderReview() {
+  const container = document.getElementById('review-list');
+  if (!pendingMessages.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">✉️</div>No messages pending review</div>`;
+    return;
+  }
+  container.innerHTML = pendingMessages.map(msg => {
+    const p = msg.profile;
+    const hooks = (msg.profile.hooks || []).map(h => `<span class="hook">${h}</span>`).join('');
+    const charClass = msg.char_count > 280 ? 'danger' : msg.char_count > 240 ? 'warn' : '';
+    return `<div class="msg-card" id="msg-${msg.id}">
+      <div class="msg-header">
+        <div class="msg-person">
+          <div class="msg-name">
+            ${msg.recipient_name || 'Unknown'}
+            ${personaBadge(msg.persona)}
+          </div>
+          <div class="msg-role">${p.current_role||''} ${p.current_company ? '@ '+p.current_company : ''}</div>
+        </div>
+        <div class="score-pill">⭐ ${(p.match_score||0).toFixed(1)}</div>
+      </div>
+      ${hooks ? `<div class="msg-hooks">${hooks}</div>` : ''}
+      <div class="msg-body">
+        <div class="msg-text" id="msg-text-${msg.id}">${escHtml(msg.final_message || msg.generated_message)}</div>
+      </div>
+      <div class="msg-meta">
+        <span class="char-count ${charClass}" id="msg-chars-${msg.id}">${msg.char_count}/300 chars</span>
+        <span>·</span>
+        <span style="color:var(--text3)">${msg.ai_reasoning||''}</span>
+      </div>
+      <div class="msg-actions">
+        <button class="btn btn-approve" onclick="approveMsg(${msg.id})">✓ Approve</button>
+        <button class="btn btn-edit" onclick="editMsg(${msg.id})">✏ Edit</button>
+        <button class="btn btn-reject" onclick="rejectMsg(${msg.id})">✗ Reject</button>
+        <a href="${msg.linkedin_url}" target="_blank" class="btn btn-ghost btn-sm" style="margin-left:auto">View Profile ↗</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function editMsg(id) {
+  const el = document.getElementById('msg-text-'+id);
+  if (el.contentEditable === 'true') return;
+  el.contentEditable = 'true';
+  el.focus();
+  // Move cursor to end
+  const range = document.createRange();
+  range.selectNodeContents(el); range.collapse(false);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  // Update char count live
+  el.oninput = () => {
+    const len = el.textContent.length;
+    const cc = document.getElementById('msg-chars-'+id);
+    cc.textContent = len + '/300 chars';
+    cc.className = 'char-count ' + (len > 280 ? 'danger' : len > 240 ? 'warn' : '');
+  };
+  // Change edit button to Save
+  const card = document.getElementById('msg-'+id);
+  const editBtn = card.querySelector('.btn-edit');
+  editBtn.textContent = '💾 Save & Approve';
+  editBtn.className = 'btn btn-save';
+  editBtn.onclick = () => saveMsgEdit(id);
+}
+
+async function saveMsgEdit(id) {
+  const el = document.getElementById('msg-text-'+id);
+  const edited = el.textContent.trim();
+  await reviewAction(id, 'edit', edited);
+}
+
+async function approveMsg(id) {
+  await reviewAction(id, 'approve');
+}
+
+async function rejectMsg(id) {
+  await reviewAction(id, 'reject');
+}
+
+async function reviewAction(id, action, edited = null) {
+  const body = { action };
+  if (edited) body.edited_message = edited;
+  const r = await fetch(API + `/api/messages/${id}/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.ok) {
+    toast(action === 'approve' || action === 'edit' ? '✓ Approved — will send shortly' : '✗ Rejected', action === 'reject' ? 'error' : 'success');
+    document.getElementById('msg-'+id).remove();
+    pendingMessages = pendingMessages.filter(m => m.id !== id);
+    const label = document.getElementById('review-count-label');
+    label.textContent = `${pendingMessages.length} message${pendingMessages.length !== 1?'s':''} awaiting review`;
+    if (!pendingMessages.length) {
+      document.getElementById('review-list').innerHTML = `<div class="empty"><div class="empty-icon">✉️</div>All caught up — queue is empty</div>`;
+    }
+  } else {
+    toast('Error — try again', 'error');
+  }
+}
+
+// ── Profiles ─────────────────────────────────────────────────
+async function loadProfiles() {
+  const r = await fetch(API + '/api/profiles?limit=200');
+  allProfiles = await r.json();
+  renderProfiles();
+}
+
+function filterProfiles(f, btn) {
+  profileFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProfiles();
+}
+
+function renderProfiles() {
+  const search = (document.getElementById('profile-search')?.value || '').toLowerCase();
+  let list = allProfiles.filter(p => {
+    if (profileFilter !== 'all' && p.connection_status !== profileFilter) return false;
+    if (search && !`${p.full_name} ${p.current_company}`.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('profiles-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">No profiles found</td></tr>`;
+    return;
+  }
+
+  const statusChip = {
+    invite_pending: '<span class="status-chip chip-pending">Pending</span>',
+    connected: '<span class="status-chip chip-connected">Connected</span>',
+    invite_failed: '<span class="status-chip chip-failed">Failed</span>',
+    skipped: '<span class="status-chip chip-skipped">Skipped</span>',
+    discovered: '<span class="status-chip chip-discovered">Discovered</span>',
+  };
+
+  tbody.innerHTML = list.map(p => `<tr>
+    <td style="font-weight:500">${p.full_name||'—'}</td>
+    <td style="color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.current_role||'—'}</td>
+    <td style="color:var(--text2)">${p.current_company||'—'}</td>
+    <td>${personaBadge(p.persona)}</td>
+    <td style="color:var(--amber);font-weight:500">${(p.match_score||0).toFixed(1)}</td>
+    <td>${statusChip[p.connection_status]||p.connection_status}</td>
+    <td><a href="${p.linkedin_url}" target="_blank" style="font-size:11px;color:var(--blue)">Open ↗</a></td>
+  </tr>`).join('');
+}
+
+// ── Jobs ─────────────────────────────────────────────────────
+async function loadJobs() {
+  const r = await fetch(API + '/api/scheduler/status');
+  const d = await r.json();
+  const grid = document.getElementById('job-grid');
+  const jobDefs = [
+    { id: 'discovery_job', label: 'Discovery', icon: '🔍', desc: 'Search + invite' },
+    { id: 'connection_monitor', label: 'Monitor', icon: '📡', desc: 'Detect new connections' },
+    { id: 'send_approved', label: 'Send messages', icon: '📨', desc: 'Send approved messages' },
+  ];
+  const jobMap = {};
+  (d.jobs||[]).forEach(j => jobMap[j.id] = j);
+  const triggerKey = { discovery_job: 'discovery', connection_monitor: 'monitor', send_approved: 'send' };
+
+  grid.innerHTML = jobDefs.map(j => {
+    const info = jobMap[j.id] || {};
+    const next = info.next_run ? new Date(info.next_run).toLocaleString() : 'Unknown';
+    return `<div class="job-card">
+      <div class="job-name">${j.icon} ${j.label}</div>
+      <div class="job-next">${j.desc}<br>Next: ${next}</div>
+      <button class="btn btn-primary btn-sm" onclick="triggerJob('${triggerKey[j.id]}', this)">▶ Run now</button>
+    </div>`;
+  }).join('');
+}
+
+async function triggerJob(job, btn) {
+  btn.disabled = true; btn.textContent = 'Running…';
+  const r = await fetch(API + '/api/jobs/trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job }),
+  });
+  if (r.ok) { toast(`✓ ${job} job triggered`); }
+  else { toast('Trigger failed', 'error'); }
+  setTimeout(() => { btn.disabled = false; btn.textContent = '▶ Run now'; }, 3000);
+}
+
+// ── Logs ─────────────────────────────────────────────────────
+async function loadLogs() {
+  const r = await fetch(API + '/api/logs?limit=100');
+  const logs = await r.json();
+  const container = document.getElementById('log-list');
+  if (!logs.length) {
+    container.innerHTML = '<div class="empty">No logs yet</div>'; return;
+  }
+  container.innerHTML = logs.map(l => {
+    const t = l.created_at ? new Date(l.created_at).toLocaleTimeString() : '';
+    return `<div class="log-row">
+      <span class="log-time">${t}</span>
+      <span class="log-level level-${l.level}">${l.level}</span>
+      <span class="log-event">${l.event}</span>
+      <span class="log-detail">${l.detail||''} ${l.profile_url?'<a href="'+l.profile_url+'" target="_blank" style="color:var(--blue);font-size:10px">↗</a>':''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Init ─────────────────────────────────────────────────────
+function loadAll() { loadStats(); }
+loadAll();
+setInterval(loadStats, 30000);  // Refresh stats every 30s
+</script>
+</body>
+</html>
