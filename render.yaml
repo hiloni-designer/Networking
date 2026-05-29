@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: linkedin-agent
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LINKEDIN_EMAIL
+        sync: false
+      - key: LINKEDIN_PASSWORD
+        sync: false
+      - key: MAX_INVITES_PER_DAY
+        value: "15"
+      - key: REVIEW_MODE
+        value: "true"
+      - key: DATABASE_URL
+        value: "sqlite:///./linkedin_agent.db"
+    disk:
+      name: agent-data
+      mountPath: /app
+      sizeGB: 1

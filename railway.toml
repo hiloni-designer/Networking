@@ -1,0 +1,14 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "linkedin-agent"
+
+[services.networking]
+[[services.networking.tcpProxies]]
+applicationPort = 8000
